@@ -921,8 +921,8 @@ void WINAPI ep(PWSTR lpCommandLine)
 						NCryptFreeObject(hKey);
 					}
 
-					SysFreeString(pwszAuthority);
 					SysFreeString(pwszComputerName);
+					SysFreeString(pwszAuthority);
 				}
 			}
 		}
@@ -978,10 +978,12 @@ void WINAPI ep(PWSTR lpCommandLine)
 								CERT_SYSTEM_STORE_CURRENT_USER, NCRYPT_SILENT_FLAG);
 							CoTaskMemFree(ctbEncodedCert.pb);
 						}
+
+						LocalFree(request.pb);
 					}
 
-					SysFreeString(pwszAuthority);
 					SysFreeString(pwszComputerName);
+					SysFreeString(pwszAuthority);
 				}
 			}
 		}
