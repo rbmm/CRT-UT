@@ -448,6 +448,107 @@ HRESULT GetCAInfo(_In_ PCWSTR wszCertType, _Out_ BSTR* ppwszComputerName, _Out_ 
 	return hr;
 }
 
+class DECLSPEC_UUID("d99e6e74-fc88-11d0-b498-00a0c90312f3") CCertRequestD;
+
+HRESULT SendRequest(_Out_ CERTTRANSBLOB* pctbEncodedCert,
+					_In_ ICertRequestD* pCrtReq,
+					_In_ ULONG dwFlags,
+					_In_ const CERTTRANSBLOB *pctbRequest, 
+					_In_ PCWSTR pwszAuthority,
+					_In_opt_ BSTR Attributes = 0)
+{
+	ULONG requestId = 0;
+
+	union {
+		HRESULT InternalError;
+		ULONG dwDisposition;
+	};
+
+	CERTTRANSBLOB ctbCertChain {}, ctbDispositionMessage {};
+
+	HRESULT hr = pCrtReq->Request(
+		dwFlags,
+		pwszAuthority, 
+		&requestId, 
+		&dwDisposition, 
+		Attributes,
+		pctbRequest,
+		&ctbCertChain, 
+		pctbEncodedCert, 
+		&ctbDispositionMessage);
+	
+	if (0 <= hr)
+	{
+		char buf[16];
+		DbgPrint("[ID=%x] CR_DISP_%S\r\n", requestId, GetDispositionString(dwDisposition, buf, _countof(buf)));
+
+		if (ctbCertChain.pb)
+		{
+			CoTaskMemFree(ctbCertChain.pb);
+		}
+
+		if (ctbDispositionMessage.pb)
+		{
+			DbgPrint("msg: %s\r\n", ctbDispositionMessage.pb);
+			CoTaskMemFree(ctbDispositionMessage.pb);
+		}
+
+		if (CR_DISP_ISSUED != dwDisposition)
+		{
+			hr = InternalError < 0 ? InternalError : E_FAIL;
+		}
+	}
+
+	return hr;
+}
+
+HRESULT SendRequest(_Out_ CERTTRANSBLOB* pctbEncodedCert, 
+					_In_ ULONG dwFlags,
+					_In_ const CERTTRANSBLOB *pctbRequest,
+					_In_ PCWSTR pwszAuthority,
+					_In_ PWSTR pwszServerPrincName,
+					_In_opt_ BSTR Attributes = 0)
+{
+	HRESULT hr;
+
+	COSERVERINFO ServerInfo = { 
+		0, pwszServerPrincName
+	}; 
+
+	MULTI_QI Result = { 
+		&__uuidof(ICertRequestD) 
+	};
+
+	hr = CoCreateInstanceEx(__uuidof(CCertRequestD), 0, 
+		CLSCTX_LOCAL_SERVER|CLSCTX_REMOTE_SERVER|CLSCTX_ENABLE_CLOAKING,
+		&ServerInfo, 1, &Result);
+
+	if (0 <= hr && 0 <= (hr = Result.hr))
+	{
+		if (0 <= (hr = CoSetProxyBlanket(
+			Result.pItf, 
+			RPC_C_AUTHN_DEFAULT, 
+			RPC_C_AUTHZ_DEFAULT,
+			COLE_DEFAULT_PRINCIPAL, 
+			RPC_C_AUTHN_LEVEL_PKT_PRIVACY, 
+			RPC_C_IMP_LEVEL_IMPERSONATE,
+			0, 
+			EOAC_STATIC_CLOAKING)))
+		{
+			hr = SendRequest(pctbEncodedCert, 
+				reinterpret_cast<ICertRequestD*>(Result.pItf), 
+				dwFlags,
+				pctbRequest, 
+				pwszAuthority,
+				Attributes);
+		}
+
+		Result.pItf->Release();
+	}
+
+	return hr;
+}
+
 HRESULT FormatAttributes(_Out_ BSTR* pAttributes)
 {
 	ULONG cch = 0;
@@ -744,47 +845,6 @@ HRESULT SignRequest(_In_ PCWSTR pszUserName, _Inout_ CERTTRANSBLOB* request, _Ou
 	return hr;
 }
 
-HRESULT SendRequest(_Out_ CERTSERVERENROLL **ppcsEnroll, 
-					_In_ ULONG dwFlags,
-					_In_ const CERTTRANSBLOB *pctbRequest,
-					_In_ PCWSTR wszCertType,
-					_In_opt_ PCWSTR pwszRequestAttributes = 0)
-{
-	BSTR pwszComputerName, pwszAuthority;
-
-	HRESULT hr = GetCAInfo(wszCertType, &pwszComputerName, &pwszAuthority);
-
-	if (0 <= hr)
-	{
-		CERTSERVERENROLL *pcsEnroll;
-
-		hr = CertServerSubmitRequest(dwFlags, pctbRequest->pb, pctbRequest->cb,
-			pwszRequestAttributes, pwszComputerName, pwszAuthority, &pcsEnroll);
-
-		SysFreeString(pwszComputerName);
-		SysFreeString(pwszAuthority);
-
-		if (0 <= hr)
-		{
-			hr = pcsEnroll->hrLastStatus;
-
-			char buf[16];
-			DbgPrint("[%x]: %x (%S) %s\n", pcsEnroll->RequestId, hr, 
-				GetDispositionString(pcsEnroll->Disposition, buf, _countof(buf)), pcsEnroll->pwszDispositionMessage);
-
-			if (0 <= hr)
-			{
-				*ppcsEnroll = pcsEnroll;
-				return S_OK;
-			}
-
-			CertServerFreeMemory(pcsEnroll);
-		}
-	}
-
-	return hr;
-}
-
 void WINAPI ep(PWSTR lpCommandLine)
 {	
 	InitPrintf();
@@ -823,104 +883,128 @@ void WINAPI ep(PWSTR lpCommandLine)
 		ExitProcess((ULONG)STATUS_INVALID_PARAMETER_MIX);
 	}
 
-	//if (IsDebuggerPresent())__debugbreak();
-
-	hr = HRESULT_FROM_NT(STATUS_INVALID_PARAMETER_MIX);
-
-	CERTSERVERENROLL *pcsEnroll = 0;
-	CERTTRANSBLOB request {};
-	WCHAR szKeyName[32 + 40];
-
-	if (!wcscmp(argv[0], L"user"))
+	if (0 <= (hr = CoInitializeEx(0, COINIT_MULTITHREADED|COINIT_DISABLE_OLE1DDE)))
 	{
-		// *user*[UPN[:password]]*pfx*password
+		//if (IsDebuggerPresent())__debugbreak();
 
-		if (4 == argc)
+		hr = HRESULT_FROM_NT(STATUS_INVALID_PARAMETER_MIX);
+
+		BSTR pwszComputerName = 0, pwszAuthority = 0;
+		CERTTRANSBLOB ctbEncodedCert{}, request {};
+		WCHAR szKeyName[32 + 40];
+
+		if (!wcscmp(argv[0], L"user"))
 		{
-			ULONG dwFlags = CR_IN_BINARY|CR_IN_PKCS10;
-			NCRYPT_KEY_HANDLE hKey;
+			// *user*[UPN[:password]]*pfx*password
 
-			PWSTR pszUserName = argv[1];
-
-			if (0 <= (hr = BuildPkcs10ForSL(&request, &hKey)))
+			if (4 == argc)
 			{
-				if (0 <= (hr = SignRequest(pszUserName, &request, &dwFlags)))
+				ULONG dwFlags = CR_IN_BINARY|CR_IN_PKCS10;
+				NCRYPT_KEY_HANDLE hKey;
+
+				PWSTR pszUserName = argv[1];
+
+				if (0 <= (hr = GetCAInfo(wszCERTTYPE_USER_SMARTCARD_LOGON, &pwszComputerName, &pwszAuthority)))
 				{
-					if (0 <= (hr = SendRequest(&pcsEnroll, dwFlags, &request, wszCERTTYPE_USER_SMARTCARD_LOGON)))
+					if (0 <= (hr = BuildPkcs10ForSL(&request, &hKey)))
 					{
-						hr = ExportToPfx(argv[2], hKey, argv[3], pcsEnroll->pbCert, pcsEnroll->cbCert);
-						CertServerFreeMemory(pcsEnroll);
+						if (0 <= (hr = SignRequest(pszUserName, &request, &dwFlags)))
+						{
+							if (0 <= (hr = SendRequest(&ctbEncodedCert, dwFlags, &request, pwszAuthority, pwszComputerName, 0)))
+							{
+								hr = ExportToPfx(argv[2], hKey, argv[3], ctbEncodedCert.pb, ctbEncodedCert.cb);
+								CoTaskMemFree(ctbEncodedCert.pb);
+							}
+						}
+
+						LocalFree(request.pb);
+						NCryptFreeObject(hKey);
 					}
-				}
 
-				LocalFree(request.pb);
-				NCryptFreeObject(hKey);
+					SysFreeString(pwszComputerName);
+					SysFreeString(pwszAuthority);
+				}
 			}
 		}
-	}
-	else if (!wcscmp(argv[0], L"kdc"))
-	{
-		// *kdc
-		if (1 == argc)
+		else if (!wcscmp(argv[0], L"kdc"))
 		{
-			if (0 <= (hr = BuildPkcs10ForKDC(&request, szKeyName, _countof(szKeyName))))
+			// *kdc
+			if (1 == argc)
 			{
-				BSTR Attributes = 0;
-				FormatAttributes(&Attributes);
-
-				static const TOKEN_PRIVILEGES tp_TCB = { 1, { { { SE_TCB_PRIVILEGE }, SE_PRIVILEGE_ENABLED } } };
-				if (0 <= (hr = ImpersonateToken(&tp_TCB)))
+				if (0 <= (hr = GetCAInfo(wszCERTTYPE_KERB_AUTHENTICATION, &pwszComputerName, &pwszAuthority)))
 				{
-					hr = SendRequest(&pcsEnroll, CR_IN_BINARY|CR_IN_PKCS10, &request, wszCERTTYPE_KERB_AUTHENTICATION, Attributes);
-					RtlRevertToSelf();
-				}
 
-				SysFreeString(Attributes);
-				LocalFree(request.pb);
+					if (0 <= (hr = BuildPkcs10ForKDC(&request, szKeyName, _countof(szKeyName))))
+					{
+						BSTR Attributes = 0;
+						FormatAttributes(&Attributes);
 
-				if (0 <= hr)
-				{
-					hr = AddToMyStore(pcsEnroll->pbCert, pcsEnroll->cbCert, szKeyName, 
-						CERT_SYSTEM_STORE_LOCAL_MACHINE, 
-						NCRYPT_MACHINE_KEY_FLAG | NCRYPT_SILENT_FLAG);
-					CertServerFreeMemory(pcsEnroll);
+						static const TOKEN_PRIVILEGES tp_TCB = { 1, { { { SE_TCB_PRIVILEGE }, SE_PRIVILEGE_ENABLED } } };
+						if (0 <= (hr = ImpersonateToken(&tp_TCB)))
+						{
+							hr = SendRequest(&ctbEncodedCert, CR_IN_BINARY|CR_IN_PKCS10, &request, pwszAuthority, pwszComputerName, Attributes);
+							RtlRevertToSelf();
+						}
+
+						SysFreeString(Attributes);
+						LocalFree(request.pb);
+
+						if (0 <= hr)
+						{
+							hr = AddToMyStore(ctbEncodedCert.pb, ctbEncodedCert.cb, szKeyName, 
+								CERT_SYSTEM_STORE_LOCAL_MACHINE, 
+								NCRYPT_MACHINE_KEY_FLAG | NCRYPT_SILENT_FLAG);
+							CoTaskMemFree(ctbEncodedCert.pb);
+						}
+					}
+
+					SysFreeString(pwszComputerName);
+					SysFreeString(pwszAuthority);
 				}
 			}
 		}
-	}
-	else if (!wcscmp(argv[0], L"ea"))
-	{
-		// *ea
-		if (1 == argc)
+		else if (!wcscmp(argv[0], L"ea"))
 		{
-			if (0 <= (hr = BuildPkcs10ForEA(&request, szKeyName, _countof(szKeyName))))
+			// *ea
+			if (1 == argc)
 			{
-				if (0 <= (hr = SendRequest(&pcsEnroll, CR_IN_BINARY|CR_IN_PKCS10, &request, wszCERTTYPE_ENROLLMENT_AGENT)))
+				if (0 <= (hr = GetCAInfo(wszCERTTYPE_ENROLLMENT_AGENT, &pwszComputerName, &pwszAuthority)))
 				{
-					hr = AddToMyStore(pcsEnroll->pbCert, pcsEnroll->cbCert, szKeyName,
-						CERT_SYSTEM_STORE_CURRENT_USER, NCRYPT_SILENT_FLAG);
-					CertServerFreeMemory(pcsEnroll);
-				}
+					if (0 <= (hr = BuildPkcs10ForEA(&request, szKeyName, _countof(szKeyName))))
+					{
+						if (0 <= (hr = SendRequest(&ctbEncodedCert, CR_IN_BINARY|CR_IN_PKCS10, &request, pwszAuthority, pwszComputerName)))
+						{
+							hr = AddToMyStore(ctbEncodedCert.pb, ctbEncodedCert.cb, szKeyName,
+								CERT_SYSTEM_STORE_CURRENT_USER, NCRYPT_SILENT_FLAG);
+							CoTaskMemFree(ctbEncodedCert.pb);
+						}
 
-				LocalFree(request.pb);
+						LocalFree(request.pb);
+					}
+
+					SysFreeString(pwszComputerName);
+					SysFreeString(pwszAuthority);
+				}
 			}
 		}
-	}
-	else if (!wcscmp(argv[0], L"export"))
-	{
-		// *export*file.sst
-		if (2 == argc)
+		else if (!wcscmp(argv[0], L"export"))
 		{
-			hr = ExportCA(argv[1]);
+			// *export*file.sst
+			if (2 == argc)
+			{
+				hr = ExportCA(argv[1]);
+			}
 		}
-	}
-	else if (!wcscmp(argv[0], L"import"))
-	{
-		// *export*file.sst
-		if (2 == argc)
+		else if (!wcscmp(argv[0], L"import"))
 		{
-			hr = ImportCA(argv[1]);
+			// *export*file.sst
+			if (2 == argc)
+			{
+				hr = ImportCA(argv[1]);
+			}
 		}
+
+		CoUninitialize();
 	}
 
 	ExitProcess(PrintError(hr));
