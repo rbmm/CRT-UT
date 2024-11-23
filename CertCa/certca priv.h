@@ -1,219 +1,313 @@
 #pragma once
 
-struct CAPROP;
-struct CATRANSPROP;
-enum TestKeyAttResult;
-enum LogPriority;
+DECLSPEC_IMPORT
+long CCFindCertificateBuildFilter(unsigned short const *,void * *);
 
-WINBASEAPI
-HRESULT WINAPI myVerifyEKOrAIKCertContext(int,PCCERT_CONTEXT,ULONG,void *); // #875
+DECLSPEC_IMPORT
+void CCFindCertificateFreeFilter(void *);
 
-WINBASEAPI
-PCWSTR myHResultToStringRawEx(unsigned short *,unsigned __int64,long); // #874
+DECLSPEC_IMPORT
+struct _CERT_CONTEXT const * CCFindCertificateFromFilter(void *,void *,struct _CERT_CONTEXT const *);
 
-WINBASEAPI
-PCWSTR myHResultToStringEx(unsigned short *,unsigned __int64,long); // #873
+DECLSPEC_IMPORT
+void CCFreeStringArray(unsigned short * *);
 
-WINBASEAPI
-HRESULT WINAPI myVerifyCertContext(PCCERT_CONTEXT,ULONG,ULONG,PCSTR const *,void *,void *,unsigned short * *); // #872
+DECLSPEC_IMPORT
+long CCGetCertNameList(struct _CERT_CONTEXT const *,unsigned long,unsigned long,unsigned long *,unsigned short * * *);
 
-WINBASEAPI
-HRESULT WINAPI myVerifyEKPub(PCWSTR,PCWSTR,int *); // #871
+// #875
+DECLSPEC_IMPORT
+long myVerifyEKOrAIKCertContext(int,struct _CERT_CONTEXT const *,unsigned long,void *);
 
-WINBASEAPI
-HRESULT WINAPI myVerifyEKCertContext(PCCERT_CONTEXT,ULONG,void *); // #870
+// #874
+DECLSPEC_IMPORT
+unsigned short const * myHResultToStringRawEx(unsigned short *,unsigned __int64,long);
 
-WINBASEAPI
-HRESULT WINAPI LoadTpmTestEnumErrorMessages(TestKeyAttResult,unsigned short * *); // #869
+// #873
+DECLSPEC_IMPORT
+unsigned short const * myHResultToStringEx(unsigned short *,unsigned __int64,long);
 
-WINBASEAPI
-HRESULT WINAPI myFileTimeToDate(_FILETIME const *,double *); // #868
+// #872
+DECLSPEC_IMPORT
+long myVerifyCertContext(struct _CERT_CONTEXT const *,unsigned long,unsigned long,char const * const *,void *,void *,unsigned short * *);
 
-WINBASEAPI
-HRESULT WINAPI myGetAlgorithmNameFromPubKey(_CERT_PUBLIC_KEY_INFO const *,int,int *,unsigned short * *); // #867
+// #871
+DECLSPEC_IMPORT
+long myVerifyEKPub(unsigned short const *,unsigned short const *,int *);
 
-WINBASEAPI
-HRESULT WINAPI myGetIsSigningCertificate(PCCERT_CONTEXT,ULONG,unsigned __int64,bool *); // #866
+// #870
+DECLSPEC_IMPORT
+long myVerifyEKCertContext(struct _CERT_CONTEXT const *,unsigned long,void *);
 
-WINBASEAPI
-HRESULT WINAPI myCryptGetDefaultProvider(ULONG,PCWSTR,PCWSTR,ULONG,unsigned short * *,unsigned short * *); // #865
+// #869
+DECLSPEC_IMPORT
+long LoadTpmTestEnumErrorMessages(enum TestKeyAttResult,unsigned short * *);
 
-WINBASEAPI
-void WINAPI CSPrintErrorInit(void (*)(SYSTEMTIME const *,PCWSTR,PCWSTR,PCWSTR,ULONG,long)); // #859
+// #868
+DECLSPEC_IMPORT
+long myFileTimeToDate(struct _FILETIME const *,double *);
 
-WINBASEAPI
-HRESULT WINAPI CertcliGetDetailedCertcliVersionString(PCWSTR *); // #858
+// #867
+DECLSPEC_IMPORT
+long myGetAlgorithmNameFromPubKey(struct _CERT_PUBLIC_KEY_INFO const *,int,int *,unsigned short * *);
 
-WINBASEAPI
-void WINAPI myFreeColumnDisplayNames2(); // #857
+// #866
+DECLSPEC_IMPORT
+long myGetIsSigningCertificate(struct _CERT_CONTEXT const *,unsigned long,unsigned __int64,bool *);
 
-WINBASEAPI
-HRESULT WINAPI GetDetailedVersionString(PCWSTR,unsigned short * *); // #856
+// #865
+DECLSPEC_IMPORT
+long myCryptGetDefaultProvider(unsigned long,unsigned short const *,unsigned short const *,unsigned long,unsigned short * *,unsigned short * *);
 
-WINBASEAPI
-HRESULT WINAPI myEnablePrivilege(long,int); // #855
+// #859
+DECLSPEC_IMPORT
+void CSPrintErrorInit(void (*)(struct _SYSTEMTIME const *,unsigned short const *,unsigned short const *,unsigned short const *,unsigned long,long));
 
-WINBASEAPI
-HRESULT WINAPI myGetHashAlgorithmOIDInfoFromSignatureAlgorithm(_CRYPT_ALGORITHM_IDENTIFIER const *,_CRYPT_OID_INFO const * *); // #854
+// #858
+DECLSPEC_IMPORT
+long CertcliGetDetailedCertcliVersionString(unsigned short const * *);
 
-WINBASEAPI
-HRESULT WINAPI myGetTargetMachineDomainDnsName(PCWSTR,unsigned short * *,unsigned short * *,unsigned short * *); // #852
+// #857
+DECLSPEC_IMPORT
+void myFreeColumnDisplayNames2(void);
 
-WINBASEAPI
-HRESULT WINAPI AddOrRemoveOCSPISAPIExtension(int,int *); // #851
+// #856
+DECLSPEC_IMPORT
+long GetDetailedVersionString(unsigned short const *,unsigned short * *);
 
-WINBASEAPI
-HRESULT WINAPI SplitConfigString(PCWSTR,unsigned short * *,unsigned short * *); // #850
+// #855
+DECLSPEC_IMPORT
+long myEnablePrivilege(long,int);
 
-WINBASEAPI
-HRESULT WINAPI RemoveISAPIExtension(PCWSTR); // #848
+// #854
+DECLSPEC_IMPORT
+long myGetHashAlgorithmOIDInfoFromSignatureAlgorithm(struct _CRYPT_ALGORITHM_IDENTIFIER const *,struct _CRYPT_OID_INFO const * *);
 
-WINBASEAPI
-LogPriority DbgLogStringInit2(void (*)(PCSTR),LogPriority); // #847
+// #852
+DECLSPEC_IMPORT
+long myGetTargetMachineDomainDnsName(unsigned short const *,unsigned short * *,unsigned short * *,unsigned short * *);
 
-WINBASEAPI
-void WINAPI CSPrintErrorLineFileData2(PCWSTR,ULONG,long,long); // #842
+// #851
+DECLSPEC_IMPORT
+long AddOrRemoveOCSPISAPIExtension(int,int *);
 
-WINBASEAPI
-void WINAPI CSPrintErrorLineFileData(PCWSTR,ULONG,long); // #841
+// #850
+DECLSPEC_IMPORT
+long SplitConfigString(unsigned short const *,unsigned short * *,unsigned short * *);
 
-WINBASEAPI
-void WINAPI CSPrintErrorLineFile2(ULONG,long,long); // #840
+// #849
+DECLSPEC_IMPORT
+long RemoveVDir(unsigned short const *,int *);
 
-WINBASEAPI
-void WINAPI CSPrintErrorLineFile(ULONG,long); // #839
+// #848
+DECLSPEC_IMPORT
+long RemoveISAPIExtension(unsigned short const *);
+
+// #847
+DECLSPEC_IMPORT
+enum LogPriority DbgLogStringInit2(void (*)(char const *),enum LogPriority);
+
+// #842
+DECLSPEC_IMPORT
+void CSPrintErrorLineFileData2(unsigned short const *,unsigned long,long,long);
+
+// #841
+DECLSPEC_IMPORT
+void CSPrintErrorLineFileData(unsigned short const *,unsigned long,long);
+
+// #840
+DECLSPEC_IMPORT
+void CSPrintErrorLineFile2(unsigned long,long,long);
+
+// #839
+DECLSPEC_IMPORT
+void CSPrintErrorLineFile(unsigned long,long);
+
+// #838
+DECLSPEC_IMPORT
+long myHGetLastError(void);
+
+// #837
+DECLSPEC_IMPORT
+int mylstrcmpiL(unsigned short const *,unsigned short const *);
+
+// #836
+DECLSPEC_IMPORT
+void myGenerateGuidSerialNumber(struct _GUID *);
+
+// #835
+DECLSPEC_IMPORT
+long myGenerateGuidString(unsigned short * *);
+
+// #834
+DECLSPEC_IMPORT
+long myRevertSanitizeName(unsigned short const *,unsigned short * *);
+
+// #833
+DECLSPEC_IMPORT
+long mySanitizedNameToShortName(unsigned short const *,int,unsigned short * *);
+
+// #832
+DECLSPEC_IMPORT
+long mySanitizedNameToDSName(unsigned short const *,unsigned short * *);
+
+// #831
+DECLSPEC_IMPORT
+long mySanitizeName(unsigned short const *,unsigned short * *);
+
+// #830
+DECLSPEC_IMPORT
+long IsASPEnabledInIIS(bool &);
+
+// #829
+DECLSPEC_IMPORT
+unsigned long myGetSidFromDomain(unsigned short *,void * *);
+
+// #828
+DECLSPEC_IMPORT
+long RemoveVDir(unsigned short const *,int *);
+
+// #827
+DECLSPEC_IMPORT
+long IsISAPIExtensionEnabled(unsigned short const *,bool &);
+
+// #826
+DECLSPEC_IMPORT
+long EnableASPInIIS(int *);
+
+// #825
+DECLSPEC_IMPORT
+long IsASPEnabledInIIS(bool &);
+
+// #824
+DECLSPEC_IMPORT
+int DbgPrintfW(unsigned long,unsigned short const *,...);
+
+// #823
+DECLSPEC_IMPORT
+long myHExceptionCodePrint(struct _EXCEPTION_POINTERS const *,char const *,unsigned long,unsigned long);
+
+// #822
+DECLSPEC_IMPORT
+void myLogExceptionInit(void (*)(long,struct _EXCEPTION_POINTERS const *,char const *,unsigned long,unsigned long));
+
+// #821
+DECLSPEC_IMPORT
+long myOIDHashOIDToString(unsigned short const *,unsigned short * *);
+
+// #818
+DECLSPEC_IMPORT
+long myCAPropInfoLookup(struct _CAPROP const *,long,long,struct _CAPROP const * *);
+
+// #817
+DECLSPEC_IMPORT
+long myCAPropInfoUnmarshal(struct _CATRANSPROP const *,long,unsigned long,struct _CAPROP * *);
+
+// #816
+DECLSPEC_IMPORT
+long myCAPropGetDisplayName(long,unsigned short const * *);
+
+// #815
+DECLSPEC_IMPORT
+unsigned short * myGetErrorMessageTextEx(long,unsigned long,unsigned short const * *,unsigned long);
+
+// #814
+DECLSPEC_IMPORT
+unsigned short * myGetErrorMessageText1(long,unsigned long,unsigned short const *);
 
-WINBASEAPI
-HRESULT WINAPI myHGetLastError(); // #838
+// #813
+DECLSPEC_IMPORT
+long WszToMultiByteInteger(unsigned long,unsigned short const *,unsigned long *,unsigned char * *);
 
-WINBASEAPI
-int WINAPI mylstrcmpiL(PCWSTR,PCWSTR); // #837
+// #812
+DECLSPEC_IMPORT
+long WszToMultiByteIntegerBuf(unsigned long,unsigned short const *,unsigned long *,unsigned char *);
 
-WINBASEAPI
-void WINAPI myGenerateGuidSerialNumber(_GUID *); // #836
+// #811
+DECLSPEC_IMPORT
+void DbgLogStringInit(void (*)(char const *));
 
-WINBASEAPI
-HRESULT WINAPI myGenerateGuidString(unsigned short * *); // #835
+// #810
+DECLSPEC_IMPORT
+long myAddShare(unsigned short const *,unsigned short const *,unsigned short const *,int,int *);
 
-WINBASEAPI
-HRESULT WINAPI myRevertSanitizeName(PCWSTR,unsigned short * *); // #834
+// #809
+DECLSPEC_IMPORT
+long EncodeToFileW(unsigned short const *,unsigned char const *,unsigned long,unsigned long);
 
-WINBASEAPI
-HRESULT WINAPI mySanitizedNameToShortName(PCWSTR,int,unsigned short * *); // #833
+// #808
+DECLSPEC_IMPORT
+long DecodeFileW(unsigned short const *,unsigned char * *,unsigned long *,unsigned long);
 
-WINBASEAPI
-HRESULT WINAPI mySanitizedNameToDSName(PCWSTR,unsigned short * *); // #832
+// #807
+DECLSPEC_IMPORT
+long myModifyVirtualRootsAndFileShares(unsigned long,enum ENUM_CATYPES,unsigned long,unsigned long *,unsigned long *);
 
-WINBASEAPI
-HRESULT WINAPI mySanitizeName(PCWSTR,unsigned short * *); // #831
+// #806
+DECLSPEC_IMPORT
+long myJetHResult(long);
 
-WINBASEAPI
-ULONG myGetSidFromDomain(unsigned short *,void * *); // #829
+// #805
+DECLSPEC_IMPORT
+long myHExceptionCode(struct _EXCEPTION_POINTERS const *);
 
-WINBASEAPI
-HRESULT WINAPI IsISAPIExtensionEnabled(PCWSTR,bool &); // #827
+// #804
+DECLSPEC_IMPORT
+int myIsDelayLoadHResult(long);
 
-WINBASEAPI
-HRESULT WINAPI EnableASPInIIS(int *); // #826
+// #802
+DECLSPEC_IMPORT
+void myFreeColumnDisplayNames(void);
 
-WINBASEAPI
-HRESULT WINAPI IsASPEnabledInIIS(bool &); // #825
+// #801
+DECLSPEC_IMPORT
+long myDoesDSExist(int);
 
-WINBASEAPI
-int DbgPrintfW(ULONG,PCWSTR,...); // #824
+// #708
+DECLSPEC_IMPORT
+unsigned short const * myHResultToStringRaw_old(unsigned short *,long);
 
-WINBASEAPI
-HRESULT WINAPI myHExceptionCodePrint(EXCEPTION_POINTERS const *,PCSTR,ULONG,ULONG); // #823
+// #707
+DECLSPEC_IMPORT
+unsigned short * myGetErrorMessageText(long,unsigned long);
 
-WINBASEAPI
-void WINAPI myLogExceptionInit(void (*)(long,EXCEPTION_POINTERS const *,PCSTR,ULONG,ULONG)); // #822
+// #706
+DECLSPEC_IMPORT
+unsigned short const * myHResultToString_old(unsigned short *,long);
 
-WINBASEAPI
-HRESULT WINAPI myOIDHashOIDToString(PCWSTR,unsigned short * *); // #821
+// #705
+DECLSPEC_IMPORT
+int DbgIsSSActive(unsigned long);
 
-WINBASEAPI
-HRESULT WINAPI myCAPropInfoLookup(CAPROP const *,long,long,CAPROP const * *); // #818
+// #704
+DECLSPEC_IMPORT
+void DbgPrintfInit(char const *);
 
-WINBASEAPI
-HRESULT WINAPI myCAPropInfoUnmarshal(CATRANSPROP const *,long,ULONG,CAPROP * *); // #817
+// #703
+DECLSPEC_IMPORT
+int DbgPrintf(unsigned long,char const *,...);
 
-WINBASEAPI
-HRESULT WINAPI myCAPropGetDisplayName(long,PCWSTR *); // #816
+// #702
+DECLSPEC_IMPORT
+void CSPrintError(char const *,unsigned short const *,char const *,unsigned long,long,long);
 
-WINBASEAPI
-unsigned short * myGetErrorMessageTextEx(long,ULONG,PCWSTR *,ULONG); // #815
+// #701
+DECLSPEC_IMPORT
+void CSPrintAssert(char const *,char const *,unsigned long,char const *);
 
-WINBASEAPI
-unsigned short * myGetErrorMessageText1(long,ULONG,PCWSTR); // #814
+// #604
+DECLSPEC_IMPORT
+long myCryptBinaryToStringA(unsigned char const *,unsigned long,unsigned long,char * *);
 
-WINBASEAPI
-HRESULT WINAPI WszToMultiByteInteger(ULONG,PCWSTR,ULONG *,unsigned char * *); // #813
+// #603
+DECLSPEC_IMPORT
+long myCryptStringToBinaryA(char const *,unsigned long,unsigned long,unsigned char * *,unsigned long *,unsigned long *,unsigned long *);
 
-WINBASEAPI
-HRESULT WINAPI WszToMultiByteIntegerBuf(ULONG,PCWSTR,ULONG *,unsigned char *); // #812
+// #602
+DECLSPEC_IMPORT
+long myCryptBinaryToString(unsigned char const *,unsigned long,unsigned long,unsigned short * *);
 
-WINBASEAPI
-void WINAPI DbgLogStringInit(void (*)(PCSTR)); // #811
+// #601
+DECLSPEC_IMPORT
+long myCryptStringToBinary(unsigned short const *,unsigned long,unsigned long,unsigned char * *,unsigned long *,unsigned long *,unsigned long *);
 
-WINBASEAPI
-HRESULT WINAPI myAddShare(PCWSTR,PCWSTR,PCWSTR,int,int *); // #810
-
-WINBASEAPI
-HRESULT WINAPI EncodeToFileW(PCWSTR,unsigned PCSTR,ULONG,ULONG); // #809
-
-WINBASEAPI
-HRESULT WINAPI DecodeFileW(PCWSTR,unsigned char * *,ULONG *,ULONG); // #808
-
-WINBASEAPI
-HRESULT WINAPI myModifyVirtualRootsAndFileShares(ULONG,ENUM_CATYPES,ULONG,ULONG *,ULONG *); // #807
-
-WINBASEAPI
-HRESULT WINAPI myJetHResult(HRESULT); // #806
-
-WINBASEAPI
-HRESULT WINAPI myHExceptionCode(EXCEPTION_POINTERS const *); // #805
-
-WINBASEAPI
-int WINAPI myIsDelayLoadHResult(HRESULT); // #804
-
-WINBASEAPI
-void WINAPI myFreeColumnDisplayNames(); // #802
-
-WINBASEAPI
-HRESULT WINAPI myDoesDSExist(int); // #801
-
-WINBASEAPI
-PCWSTR myHResultToStringRaw_old(unsigned short *,long); // #708
-
-WINBASEAPI
-unsigned short * myGetErrorMessageText(long,ULONG); // #707
-
-WINBASEAPI
-PCWSTR myHResultToString_old(unsigned short *,long); // #706
-
-WINBASEAPI
-int WINAPI DbgIsSSActive(ULONG); // #705
-
-WINBASEAPI
-void WINAPI DbgPrintfInit(PCSTR); // #704
-
-WINBASEAPI
-int WINAPI DbgPrintf(ULONG,PCSTR,...); // #703
-
-WINBASEAPI
-void WINAPI CSPrintError(PCSTR,PCWSTR,PCSTR,ULONG,long,long); // #702
-
-WINBASEAPI
-void WINAPI CSPrintAssert(PCSTR,PCSTR,ULONG,PCSTR); // #701
-
-WINBASEAPI
-HRESULT WINAPI myCryptBinaryToStringA(unsigned PCSTR,ULONG,ULONG,char * *); // #604
-
-WINBASEAPI
-HRESULT WINAPI myCryptStringToBinaryA(PCSTR,ULONG,ULONG,unsigned char * *,ULONG *,ULONG *,ULONG *); // #603
-
-WINBASEAPI
-HRESULT WINAPI myCryptBinaryToString(unsigned PCSTR,ULONG,ULONG,unsigned short * *); // #602
-
-WINBASEAPI
-HRESULT WINAPI myCryptStringToBinary(PCWSTR,ULONG,ULONG,unsigned char * *,ULONG *,ULONG *,ULONG *); // #601
